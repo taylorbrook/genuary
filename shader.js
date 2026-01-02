@@ -87,47 +87,20 @@ class ShaderProgram {
     }
 
     setupLocations() {
-        // Get uniform locations
-        this.uniforms.time = this.gl.getUniformLocation(this.program, 'u_time');
-        this.uniforms.resolution = this.gl.getUniformLocation(this.program, 'u_resolution');
-        this.uniforms.hue = this.gl.getUniformLocation(this.program, 'u_hue');
-        this.uniforms.segments = this.gl.getUniformLocation(this.program, 'u_segments');
-        this.uniforms.sides = this.gl.getUniformLocation(this.program, 'u_sides');
-        this.uniforms.scale = this.gl.getUniformLocation(this.program, 'u_scale');
-        this.uniforms.speed = this.gl.getUniformLocation(this.program, 'u_speed');
-        this.uniforms.rotation = this.gl.getUniformLocation(this.program, 'u_rotation');
+        // Dynamic uniform discovery - automatically find all uniforms in the shader
+        const numUniforms = this.gl.getProgramParameter(this.program, this.gl.ACTIVE_UNIFORMS);
 
-        // Layer 1 uniforms
-        this.uniforms.layer1Count = this.gl.getUniformLocation(this.program, 'u_layer1Count');
-        this.uniforms.layer1Radius = this.gl.getUniformLocation(this.program, 'u_layer1Radius');
-        this.uniforms.layer1RotSpeed = this.gl.getUniformLocation(this.program, 'u_layer1RotSpeed');
-        this.uniforms.layer1Scale = this.gl.getUniformLocation(this.program, 'u_layer1Scale');
+        for (let i = 0; i < numUniforms; i++) {
+            const info = this.gl.getActiveUniform(this.program, i);
+            const name = info.name;
 
-        // Layer 2 uniforms
-        this.uniforms.layer2Count = this.gl.getUniformLocation(this.program, 'u_layer2Count');
-        this.uniforms.layer2Radius = this.gl.getUniformLocation(this.program, 'u_layer2Radius');
-        this.uniforms.layer2RotSpeed = this.gl.getUniformLocation(this.program, 'u_layer2RotSpeed');
-        this.uniforms.layer2Scale = this.gl.getUniformLocation(this.program, 'u_layer2Scale');
+            // Convert uniform name to JavaScript-friendly name
+            // e.g., "u_ballSize" -> "ballSize"
+            const jsName = name.startsWith('u_') ? name.substring(2) : name;
 
-        // Layer 3 uniforms
-        this.uniforms.layer3Count = this.gl.getUniformLocation(this.program, 'u_layer3Count');
-        this.uniforms.layer3Radius = this.gl.getUniformLocation(this.program, 'u_layer3Radius');
-        this.uniforms.layer3RotSpeed = this.gl.getUniformLocation(this.program, 'u_layer3RotSpeed');
-        this.uniforms.layer3Scale = this.gl.getUniformLocation(this.program, 'u_layer3Scale');
-
-        // Effect uniforms
-        this.uniforms.blendSmoothness = this.gl.getUniformLocation(this.program, 'u_blendSmoothness');
-        this.uniforms.pulseFreq = this.gl.getUniformLocation(this.program, 'u_pulseFreq');
-        this.uniforms.pulseAmount = this.gl.getUniformLocation(this.program, 'u_pulseAmount');
-        this.uniforms.waveStrength = this.gl.getUniformLocation(this.program, 'u_waveStrength');
-        this.uniforms.zoomFreq = this.gl.getUniformLocation(this.program, 'u_zoomFreq');
-        this.uniforms.zoomAmount = this.gl.getUniformLocation(this.program, 'u_zoomAmount');
-
-        // Recursion uniforms
-        this.uniforms.recursionDepth = this.gl.getUniformLocation(this.program, 'u_recursionDepth');
-        this.uniforms.recursionScale = this.gl.getUniformLocation(this.program, 'u_recursionScale');
-        this.uniforms.recursionSpread = this.gl.getUniformLocation(this.program, 'u_recursionSpread');
-        this.uniforms.recursionFade = this.gl.getUniformLocation(this.program, 'u_recursionFade');
+            // Store location
+            this.uniforms[jsName] = this.gl.getUniformLocation(this.program, name);
+        }
     }
 
     setUniform(name, value) {

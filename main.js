@@ -40,6 +40,24 @@ const shaders = {
             recursionSpread: 1.0,
             recursionFade: 0.7
         }
+    },
+    2: {
+        name: "Anticipation (Hand-Drawn)",
+        vertexPath: "shaders/vertex.glsl",
+        fragmentPath: "shaders/day2-fragment.glsl",
+        params: {
+            hue: 200,
+            speed: 0.6,
+            sketchiness: 0.15,
+            hatchDensity: 0.5,
+            anticipationAmt: 0.8,
+            windUpDuration: 0.6,
+            energyIntensity: 0.7,
+            formCount: 4,
+            paperGrain: 0.3,
+            lineWeight: 1.2,
+            contrast: 1.0
+        }
     }
 };
 
@@ -137,6 +155,15 @@ async function switchToDay(day) {
     // Update header
     document.querySelector('header h1').textContent = shaders[day].name;
 
+    // Show/hide appropriate control panels
+    document.querySelectorAll('[class^="day-"]').forEach(el => {
+        el.style.display = 'none';
+    });
+    const dayControls = document.querySelector(`.day-${day}-controls`);
+    if (dayControls) {
+        dayControls.style.display = 'block';
+    }
+
     // Reload shader
     const config = shaders[day];
     await shaderProgram.init(config.vertexPath, config.fragmentPath);
@@ -191,57 +218,22 @@ async function init() {
     }
 }
 
-// Setup UI control event listeners
+// Setup UI control event listeners - works dynamically for all controls
 function setupControls() {
-    const controls = [
-        { id: 'hue', param: 'hue', isInt: true },
-        { id: 'segments', param: 'segments', isInt: true },
-        { id: 'sides', param: 'sides', isInt: true },
-        { id: 'scale', param: 'scale', isInt: false },
-        { id: 'speed', param: 'speed', isInt: false },
-        { id: 'rotation', param: 'rotation', isInt: false },
+    // Find all input sliders in the controls panel
+    const allSliders = document.querySelectorAll('.controls input[type="range"]');
 
-        // Layer 1 controls
-        { id: 'layer1Count', param: 'layer1Count', isInt: true },
-        { id: 'layer1Radius', param: 'layer1Radius', isInt: false },
-        { id: 'layer1RotSpeed', param: 'layer1RotSpeed', isInt: false },
-        { id: 'layer1Scale', param: 'layer1Scale', isInt: false },
-
-        // Layer 2 controls
-        { id: 'layer2Count', param: 'layer2Count', isInt: true },
-        { id: 'layer2Radius', param: 'layer2Radius', isInt: false },
-        { id: 'layer2RotSpeed', param: 'layer2RotSpeed', isInt: false },
-        { id: 'layer2Scale', param: 'layer2Scale', isInt: false },
-
-        // Layer 3 controls
-        { id: 'layer3Count', param: 'layer3Count', isInt: true },
-        { id: 'layer3Radius', param: 'layer3Radius', isInt: false },
-        { id: 'layer3RotSpeed', param: 'layer3RotSpeed', isInt: false },
-        { id: 'layer3Scale', param: 'layer3Scale', isInt: false },
-
-        // Effect controls
-        { id: 'blendSmoothness', param: 'blendSmoothness', isInt: false },
-        { id: 'pulseFreq', param: 'pulseFreq', isInt: false },
-        { id: 'pulseAmount', param: 'pulseAmount', isInt: false },
-        { id: 'waveStrength', param: 'waveStrength', isInt: false },
-        { id: 'zoomFreq', param: 'zoomFreq', isInt: false },
-        { id: 'zoomAmount', param: 'zoomAmount', isInt: false },
-
-        // Recursion controls
-        { id: 'recursionDepth', param: 'recursionDepth', isInt: true },
-        { id: 'recursionScale', param: 'recursionScale', isInt: false },
-        { id: 'recursionSpread', param: 'recursionSpread', isInt: false },
-        { id: 'recursionFade', param: 'recursionFade', isInt: false }
-    ];
-
-    controls.forEach(({ id, param, isInt }) => {
-        const slider = document.getElementById(id);
+    allSliders.forEach(slider => {
+        const id = slider.id;
         const valueDisplay = document.getElementById(`${id}-value`);
 
-        if (slider && valueDisplay) {
+        if (valueDisplay) {
+            // Determine if this is an integer control based on step
+            const isInt = slider.step === '1';
+
             slider.addEventListener('input', (e) => {
                 const value = isInt ? parseInt(e.target.value) : parseFloat(e.target.value);
-                params[param] = value;
+                params[id] = value;
                 valueDisplay.textContent = isInt ? value : value.toFixed(2);
             });
         }
@@ -252,50 +244,17 @@ function setupControls() {
 function animate(currentTime) {
     const time = (currentTime - startTime) * 0.001; // Convert to seconds
 
-    // Update uniforms
+    // Update standard uniforms
     shaderProgram.setUniform('time', time);
     shaderProgram.setUniform('resolution', [
         shaderProgram.canvas.width,
         shaderProgram.canvas.height
     ]);
-    shaderProgram.setUniform('hue', params.hue);
-    shaderProgram.setUniform('segments', params.segments);
-    shaderProgram.setUniform('sides', params.sides);
-    shaderProgram.setUniform('scale', params.scale);
-    shaderProgram.setUniform('speed', params.speed);
-    shaderProgram.setUniform('rotation', params.rotation);
 
-    // Layer 1 uniforms
-    shaderProgram.setUniform('layer1Count', params.layer1Count);
-    shaderProgram.setUniform('layer1Radius', params.layer1Radius);
-    shaderProgram.setUniform('layer1RotSpeed', params.layer1RotSpeed);
-    shaderProgram.setUniform('layer1Scale', params.layer1Scale);
-
-    // Layer 2 uniforms
-    shaderProgram.setUniform('layer2Count', params.layer2Count);
-    shaderProgram.setUniform('layer2Radius', params.layer2Radius);
-    shaderProgram.setUniform('layer2RotSpeed', params.layer2RotSpeed);
-    shaderProgram.setUniform('layer2Scale', params.layer2Scale);
-
-    // Layer 3 uniforms
-    shaderProgram.setUniform('layer3Count', params.layer3Count);
-    shaderProgram.setUniform('layer3Radius', params.layer3Radius);
-    shaderProgram.setUniform('layer3RotSpeed', params.layer3RotSpeed);
-    shaderProgram.setUniform('layer3Scale', params.layer3Scale);
-
-    // Effect uniforms
-    shaderProgram.setUniform('blendSmoothness', params.blendSmoothness);
-    shaderProgram.setUniform('pulseFreq', params.pulseFreq);
-    shaderProgram.setUniform('pulseAmount', params.pulseAmount);
-    shaderProgram.setUniform('waveStrength', params.waveStrength);
-    shaderProgram.setUniform('zoomFreq', params.zoomFreq);
-    shaderProgram.setUniform('zoomAmount', params.zoomAmount);
-
-    // Recursion uniforms
-    shaderProgram.setUniform('recursionDepth', params.recursionDepth);
-    shaderProgram.setUniform('recursionScale', params.recursionScale);
-    shaderProgram.setUniform('recursionSpread', params.recursionSpread);
-    shaderProgram.setUniform('recursionFade', params.recursionFade);
+    // Dynamically update all params as uniforms
+    Object.keys(params).forEach(key => {
+        shaderProgram.setUniform(key, params[key]);
+    });
 
     // Render the frame
     shaderProgram.render();
