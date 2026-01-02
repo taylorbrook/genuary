@@ -197,15 +197,28 @@ float crosshatch(vec2 p, float intensity) {
 }
 
 // ============================================================================
-// PAPER TEXTURE - For authentic hand-drawn feel
+// PAPER TEXTURE - For authentic hand-drawn feel (crumpled paper effect)
 // ============================================================================
 
 float paperTexture(vec2 uv) {
-    // Multiple scales of noise for paper grain
-    float grain = fbm(uv * 2.0) * 0.5;
-    grain += noise(uv * 5.0) * 0.3;
-    grain += noise(uv * 10.0) * 0.2;
-    return grain;
+    // Crumpled paper effect with ridges and valleys
+    vec2 p = uv * 3.0;
+
+    // Large scale wrinkles
+    float crumple1 = abs(sin(noise(p * 0.5) * 6.28));
+    float crumple2 = abs(sin(noise(p * 0.7 + 100.0) * 6.28));
+
+    // Medium scale folds
+    float folds = fbm(p * 2.0);
+    folds = pow(folds, 2.0); // Make sharper ridges
+
+    // Fine detail
+    float detail = noise(p * 15.0) * 0.3;
+
+    // Combine with sharp transitions for creased look
+    float crumpled = crumple1 * 0.4 + crumple2 * 0.3 + folds * 0.2 + detail * 0.1;
+
+    return crumpled;
 }
 
 // ============================================================================
@@ -239,9 +252,21 @@ void main() {
     // Normalize coordinates to center
     vec2 uv = (gl_FragCoord.xy - 0.5 * u_resolution) / min(u_resolution.x, u_resolution.y);
 
-    // Paper background texture
+    // Blue sky background with clouds
+    float skyGradient = smoothstep(-0.8, 0.8, uv.y);
+    vec3 skyTop = vec3(0.4, 0.6, 0.9);     // Deeper blue at top
+    vec3 skyBottom = vec3(0.7, 0.85, 0.95); // Lighter blue at horizon
+    vec3 skyColor = mix(skyBottom, skyTop, skyGradient);
+
+    // Add subtle clouds
+    float cloudNoise = fbm(uv * 2.0 + u_time * 0.02);
+    cloudNoise = smoothstep(0.4, 0.7, cloudNoise);
+    vec3 cloudColor = vec3(1.0, 1.0, 1.0);
+    skyColor = mix(skyColor, cloudColor, cloudNoise * 0.3);
+
+    // Paper texture overlay on sky
     float paper = paperTexture(gl_FragCoord.xy * 0.01);
-    vec3 bgColor = vec3(0.95 + paper * u_paperGrain * 0.05);
+    vec3 bgColor = skyColor * (0.95 + paper * u_paperGrain * 0.1);
 
     // Time-based anticipation cycle
     float cycleTime = mod(u_time * u_speed, 1.0);
@@ -249,6 +274,7 @@ void main() {
 
     // ========================================================================
     // RENDER ORGANIC FORMS with anticipation motion
+    // Each form has unique movement characteristics
     // ========================================================================
 
     float formDist = 1000.0;
@@ -257,50 +283,78 @@ void main() {
     for (float i = 0.0; i < 8.0; i++) {
         if (i >= u_formCount) break;
 
-        // Each form has its own phase offset for overlapping action
-        float phase = i * 0.3;
-        float t = mod(cycleTime + phase, 1.0);
+        // Each form has different cycle length for unpredictability
+        // Using prime-like numbers for non-repeating patterns
+        float cycleLength = 1.0;
+        if (i == 0.0) cycleLength = 3.7; // Long, slow cycle
+        if (i == 1.0) cycleLength = 2.3; // Medium cycle
+        if (i == 2.0) cycleLength = 5.1; // Very long cycle
 
-        // Calculate anticipation for this form
+        // Scale time by cycle length and add unique phase
+        float phase = hash(vec2(i * 7.123, i * 3.456)); // Random phase per form
+        float t = mod((u_time * u_speed / cycleLength) + phase, 1.0);
+
+        // Calculate anticipation with different easing per form
         float formAnticipation = anticipationCurve(t);
 
-        // Different motion patterns for variety
+        // Each form has completely different motion path
         vec2 center;
+        vec2 startPos, endPos;
+
         if (i == 0.0) {
-            // Primary form - horizontal motion
-            center = anticipationMotion(t, vec2(-0.4, 0.0), vec2(0.4, 0.0));
+            // Form 1: Diagonal arc motion (bottom-left to top-right)
+            startPos = vec2(-0.5, -0.4);
+            endPos = vec2(0.5, 0.5);
+            center = anticipationMotion(t, startPos, endPos);
+            // Add slight curve to the path
+            center.y += sin(t * PI) * 0.2;
             primaryCenter = center;
-        } else if (mod(i, 2.0) == 0.0) {
-            // Even forms - vertical motion
-            float offset = (i / u_formCount) * 0.4 - 0.2;
-            center = anticipationMotion(t, vec2(offset, -0.3), vec2(offset, 0.3));
+        } else if (i == 1.0) {
+            // Form 2: Figure-8 / infinity motion
+            float angle = t * TAU;
+            center.x = sin(angle) * 0.4;
+            center.y = sin(angle * 2.0) * 0.3;
+            // Apply anticipation to the radius
+            float radiusMod = 0.8 + formAnticipation * 0.4;
+            center *= radiusMod;
+        } else if (i == 2.0) {
+            // Form 3: Spiral motion inward/outward
+            float angle = t * TAU * 2.0; // Two rotations per cycle
+            float radius = 0.6 * (0.3 + formAnticipation * 0.7);
+            center.x = cos(angle) * radius;
+            center.y = sin(angle) * radius;
         } else {
-            // Odd forms - circular motion
-            float angle = (i / u_formCount) * TAU;
-            float radius = 0.3 * (1.0 + formAnticipation * u_anticipationAmt);
-            center = vec2(cos(angle), sin(angle)) * radius * 0.5;
+            // Additional forms: Random organic wandering
+            float baseAngle = i * 1.234 + u_time * 0.1;
+            startPos = vec2(cos(baseAngle), sin(baseAngle)) * 0.3;
+            endPos = vec2(cos(baseAngle + 2.0), sin(baseAngle + 2.0)) * 0.4;
+            center = anticipationMotion(t, startPos, endPos);
         }
 
         // Create organic blob shape
         vec2 p = uv - center;
 
-        // Add squash and stretch based on velocity
-        float velocity = formAnticipation * 2.0;
-        float squash = 1.0 + abs(velocity) * 0.3;
+        // Add squash and stretch based on velocity (calculated from curve derivative)
+        float tNext = mod((u_time * u_speed / cycleLength) + phase + 0.01, 1.0);
+        float nextAnticipation = anticipationCurve(tNext);
+        float velocity = (nextAnticipation - formAnticipation) * 100.0;
+
+        float squash = 1.0 + abs(velocity) * 0.4;
         float stretch = 1.0 / squash;
 
-        // Apply deformation based on motion direction
-        if (i == 0.0) {
-            // Horizontal squash/stretch
+        // Apply deformation in direction of motion
+        vec2 motionDir = normalize(center - vec2(0.0)); // Direction from origin
+        if (length(motionDir) > 0.1) {
+            // Rotate deformation to align with motion
+            float motionAngle = atan(motionDir.y, motionDir.x);
+            mat2 rot = rotate2D(-motionAngle);
+            p = rot * p;
             p.x *= squash;
             p.y *= stretch;
-        } else {
-            // Vertical or radial
-            p.y *= squash;
-            p.x *= stretch;
+            p = rotate2D(motionAngle) * p;
         }
 
-        float dist = organicBlob(p, u_time + phase * 10.0, i);
+        float dist = organicBlob(p, u_time + i * 10.0, i);
 
         // Make edges sketchy/wobbly
         dist = wobblySDF(dist, uv - center, u_time, u_sketchiness);

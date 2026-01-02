@@ -8,6 +8,7 @@ let currentDay = 1;
 const shaders = {
     1: {
         name: "Hypnotic Kaleidoscope",
+        subtitle: "One color, one shape",
         vertexPath: "shaders/vertex.glsl",
         fragmentPath: "shaders/fragment.glsl",
         params: {
@@ -42,21 +43,22 @@ const shaders = {
         }
     },
     2: {
-        name: "Anticipation (Hand-Drawn)",
+        name: "Anticipation",
+        subtitle: "12 Principles of Animation",
         vertexPath: "shaders/vertex.glsl",
         fragmentPath: "shaders/day2-fragment.glsl",
         params: {
             hue: 200,
             speed: 0.6,
             sketchiness: 0.15,
-            hatchDensity: 0.5,
+            hatchDensity: 0.3,
             anticipationAmt: 0.8,
             windUpDuration: 0.6,
-            energyIntensity: 0.7,
-            formCount: 4,
+            energyIntensity: 0.5,
+            formCount: 3,
             paperGrain: 0.3,
-            lineWeight: 1.2,
-            contrast: 1.0
+            lineWeight: 0.7,
+            contrast: 1.8
         }
     }
 };
@@ -154,6 +156,7 @@ async function switchToDay(day) {
 
     // Update header
     document.querySelector('header h1').textContent = shaders[day].name;
+    document.querySelector('header p').textContent = shaders[day].subtitle;
 
     // Show/hide appropriate control panels
     document.querySelectorAll('[class^="day-"]').forEach(el => {
