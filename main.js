@@ -69,6 +69,7 @@ const shaders = {
         params: {
             fundamental: 40,
             harmonicCount: 5,
+            globalVolume: 0.3,
             rotation: 0.0,
             sketchiness: 0.15,
             lineWeight: 0.8,
@@ -196,6 +197,10 @@ async function switchToDay(day) {
         // Update audio parameters
         window.fibonacciChord.fundamental = params.fundamental || 40;
         window.fibonacciChord.harmonicCount = params.harmonicCount || 5;
+        window.fibonacciChord.globalVolume = params.globalVolume || 0.3;
+
+        // Update interval ratios display
+        updateIntervalRatios(params.harmonicCount || 5);
     } else if (day !== 3 && window.fibonacciChord && window.fibonacciChord.isPlaying) {
         // Stop audio when leaving Day 3
         window.fibonacciChord.stop();
@@ -283,6 +288,16 @@ async function init() {
     }
 }
 
+// Update interval ratios display for Day 3
+function updateIntervalRatios(count) {
+    const fibonacci = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+    const ratios = fibonacci.slice(0, count).map(n => `${n}:1`).join(', ');
+    const display = document.getElementById('intervalRatios');
+    if (display) {
+        display.textContent = ratios;
+    }
+}
+
 // Setup UI control event listeners - works dynamically for all controls
 function setupControls() {
     // Find all input sliders in the controls panel
@@ -307,6 +322,9 @@ function setupControls() {
                         window.fibonacciChord.setFundamental(value);
                     } else if (id === 'harmonicCount') {
                         window.fibonacciChord.setHarmonicCount(value);
+                        updateIntervalRatios(value);
+                    } else if (id === 'globalVolume') {
+                        window.fibonacciChord.setGlobalVolume(value);
                     }
                 }
             });

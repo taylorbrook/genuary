@@ -276,15 +276,21 @@
             </div>
 
             <div class="control-group">
+                <label for="globalVolume">Global Volume</label>
+                <input type="range" id="globalVolume" min="0" max="1" value="0.3" step="0.01">
+                <span id="globalVolume-value">0.30</span>
+            </div>
+
+            <div class="control-group">
                 <label for="fundamental">Fundamental Frequency (Hz)</label>
                 <input type="range" id="fundamental" min="20" max="200" value="40" step="1">
                 <span id="fundamental-value">40</span>
             </div>
 
             <div class="control-group">
-                <label for="harmonicCount">Number of Harmonics</label>
+                <label for="harmonicCount">Interval Ratios</label>
                 <input type="range" id="harmonicCount" min="2" max="12" value="5" step="1">
-                <span id="harmonicCount-value">5</span>
+                <div id="intervalRatios" style="font-size: 12px; margin-top: 5px; color: #666;">1:1, 2:1, 3:1, 5:1, 8:1</div>
             </div>
 
             <h3>Visual Style</h3>
