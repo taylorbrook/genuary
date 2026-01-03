@@ -113,51 +113,27 @@ float sdArc(vec2 p, float radius, float startAngle, float endAngle, float thickn
 // ============================================================================
 
 // Calculate position and size of nth Fibonacci rectangle
-// Returns: xy = position, zw = size
-vec4 getFibonacciRect(int index) {
-    if (index < 0 || index >= 21) return vec4(0.0);
+// Returns: xy = position, z = size
+vec3 getFibonacciRect(int index) {
+    if (index < 0 || index >= 21) return vec3(0.0);
 
     float size = fibonacci(index);
     vec2 pos = vec2(0.0);
 
-    // Build up position by tracking where each previous rectangle was placed
-    // This creates the classic Fibonacci spiral pattern
+    // Simplified positioning - arrange in expanding spiral
+    // Using golden angle for spiral arrangement
+    float goldenAngle = 2.39996; // ~137.5 degrees in radians
 
     if (index == 0) {
         pos = vec2(0.0, 0.0);
-        size = 1.0;
-    } else if (index == 1) {
-        pos = vec2(1.0, 0.0);
-        size = 1.0;
-    } else if (index == 2) {
-        pos = vec2(0.5, 1.0);
-        size = 2.0;
-    } else if (index == 3) {
-        pos = vec2(-1.0, 0.5);
-        size = 3.0;
-    } else if (index == 4) {
-        pos = vec2(-0.5, -2.0);
-        size = 5.0;
-    } else if (index == 5) {
-        pos = vec2(4.0, -1.5);
-        size = 8.0;
-    } else if (index == 6) {
-        pos = vec2(5.5, 5.0);
-        size = 13.0;
-    } else if (index == 7) {
-        pos = vec2(-4.5, 6.5);
-        size = 21.0;
-    } else if (index == 8) {
-        pos = vec2(-11.0, -6.5);
-        size = 34.0;
     } else {
-        // For higher indices, use an approximation based on golden ratio spiral
-        float angle = float(index) * 2.39996; // ~137.5 degrees in radians (golden angle)
-        float radius = size * 0.2;
+        // Spiral outward using golden angle
+        float angle = float(index) * goldenAngle;
+        float radius = sqrt(float(index)) * 0.5; // Spiral expansion
         pos = vec2(cos(angle), sin(angle)) * radius;
     }
 
-    return vec4(pos, size, size);
+    return vec3(pos, size);
 }
 
 // ============================================================================
@@ -171,8 +147,8 @@ void main() {
     // Apply rotation
     uv = rotate2D(u_rotation * u_time * 0.1) * uv;
 
-    // Scale to fit spiral
-    uv *= 0.15;
+    // Scale to fit spiral (larger for visibility)
+    uv *= 2.0;
 
     // Background: warm paper color
     vec3 bgColor = vec3(0.95, 0.93, 0.88);
@@ -187,9 +163,9 @@ void main() {
         if (i >= u_harmonicCount) break;
 
         // Get rectangle info
-        vec4 rectInfo = getFibonacciRect(i);
+        vec3 rectInfo = getFibonacciRect(i);
         vec2 rectPos = rectInfo.xy;
-        vec2 rectSize = rectInfo.zw * 0.5; // Half-size for SDF
+        float rectSize = rectInfo.z * 0.08; // Scale down the rectangles
 
         // Get audio amplitude for this harmonic
         float amplitude = u_amplitudes[i];
@@ -197,37 +173,43 @@ void main() {
         // Transform to rectangle space
         vec2 p = uv - rectPos;
 
-        // Draw rectangle outline
-        float boxDist = sdBox(p, rectSize);
-        boxDist = wobblySDF(boxDist, p, u_sketchiness);
+        // Draw circle instead of rectangle for simplicity and visibility
+        float circleDist = length(p) - rectSize;
+        circleDist = wobblySDF(circleDist, p, u_sketchiness);
 
         // Sketch line (multiple strokes for hand-drawn feel)
-        float thickness = u_lineWeight * 0.02;
+        float thickness = u_lineWeight * 0.015;
         for (float j = 0.0; j < 2.0; j++) {
             float offset = (j - 0.5) * thickness * 0.4;
-            sketch += smoothstep(thickness, 0.0, abs(boxDist + offset));
+            sketch += smoothstep(thickness, 0.0, abs(circleDist + offset));
         }
 
         // Glow based on audio amplitude
-        if (boxDist < 0.0) {
-            // Inside rectangle - add glow based on amplitude
-            float glowAmount = amplitude * u_glowIntensity * 3.0;
-            glow += glowAmount * smoothstep(0.3, 0.0, abs(boxDist));
+        if (circleDist < 0.0) {
+            // Inside circle - add glow based on amplitude
+            float glowAmount = amplitude * u_glowIntensity * 15.0;
+            glow += glowAmount * smoothstep(0.1, 0.0, abs(circleDist));
         }
 
-        // Golden spiral arc within this square
-        // Each square has a quarter-circle arc
-        float arcRadius = rectSize.x;
-        float arcAngle = float(i) * PI * 0.5; // Rotate arc based on position in spiral
+        // Draw spiral connecting the circles
+        if (i > 0) {
+            vec3 prevRectInfo = getFibonacciRect(i - 1);
+            vec2 prevPos = prevRectInfo.xy;
 
-        // Calculate arc start/end angles based on spiral position
-        float startAngle = arcAngle;
-        float endAngle = arcAngle + PI * 0.5;
+            // Line from previous to current
+            vec2 lineDir = rectPos - prevPos;
+            float lineLen = length(lineDir);
+            lineDir = normalize(lineDir);
 
-        vec2 arcP = rotate2D(-arcAngle) * p;
-        float arcDist = sdArc(arcP, arcRadius, 0.0, PI * 0.5, u_spiralWeight * 0.01);
+            // Distance to line segment
+            vec2 toPoint = p - prevPos;
+            float t = clamp(dot(toPoint, lineDir) / lineLen, 0.0, 1.0);
+            vec2 closest = prevPos + lineDir * t * lineLen;
+            float lineDist = length(p - closest);
 
-        spiralLine = min(spiralLine, arcDist);
+            float lineThickness = u_spiralWeight * 0.01;
+            spiralLine = min(spiralLine, lineDist - lineThickness);
+        }
     }
 
     // Combine elements
@@ -238,16 +220,16 @@ void main() {
     color = mix(color, inkColor, clamp(sketch, 0.0, 1.0));
 
     // Apply golden spiral line
-    float spiralLineVis = smoothstep(0.02, 0.0, abs(spiralLine));
+    float spiralLineVis = smoothstep(0.015, 0.0, spiralLine);
     vec3 spiralColor = vec3(0.8, 0.6, 0.2); // Golden color
-    color = mix(color, spiralColor, spiralLineVis * 0.7);
+    color = mix(color, spiralColor, spiralLineVis * 0.5);
 
     // Apply audio-reactive glow
     vec3 glowColor = vec3(0.3, 0.6, 0.9); // Blue glow
-    color += glowColor * glow * 0.3;
+    color += glowColor * glow * 0.15;
 
     // Subtle vignette
-    float vignette = smoothstep(0.8, 0.3, length(uv));
+    float vignette = smoothstep(1.5, 0.3, length(uv));
     color *= 0.7 + 0.3 * vignette;
 
     gl_FragColor = vec4(color, 1.0);

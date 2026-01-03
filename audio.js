@@ -7,6 +7,7 @@ class FibonacciChord {
         this.gainNodes = [];
         this.lfoOscillators = [];
         this.lfoGains = [];
+        this.constantSources = []; // Store constant sources for cleanup
         this.masterGain = null;
         this.reverb = null;
         this.isPlaying = false;
@@ -66,7 +67,11 @@ class FibonacciChord {
             // Gain node for this oscillator
             const gain = this.audioContext.createGain();
             const baseGain = 1.0 / fibonacci.length; // Normalize volume
-            gain.gain.value = baseGain;
+            gain.gain.value = 0; // Start at 0, will be modulated by LFO and constant
+
+            // Constant source for base gain value
+            const constantSource = this.audioContext.createConstantSource();
+            constantSource.offset.value = baseGain;
 
             // LFO for amplitude modulation (Fibonacci-timed!)
             const lfo = this.audioContext.createOscillator();
@@ -74,31 +79,28 @@ class FibonacciChord {
             lfo.frequency.value = 1.0 / (fibNum * 2.0); // Slower LFO for smoother pulsing
 
             const lfoGain = this.audioContext.createGain();
-            lfoGain.gain.value = baseGain * 0.5; // LFO depth (50% modulation)
+            lfoGain.gain.value = baseGain * 0.3; // LFO depth (30% modulation)
 
-            // Offset LFO so it modulates around the base gain value
-            const lfoOffset = this.audioContext.createConstantSource();
-            lfoOffset.offset.value = baseGain;
-
-            // Connect LFO: lfo → lfoGain → gain.gain
+            // Connect constant source (base level) and LFO (modulation) to gain
+            constantSource.connect(gain.gain);
             lfo.connect(lfoGain);
             lfoGain.connect(gain.gain);
-            lfoOffset.connect(gain.gain);
 
             // Connect main chain: osc → gain → masterGain
             osc.connect(gain);
             gain.connect(this.masterGain);
 
-            // Start oscillators
+            // Start all sources
             osc.start(now);
             lfo.start(now);
-            lfoOffset.start(now);
+            constantSource.start(now);
 
-            // Store references
+            // Store references for cleanup
             this.oscillators.push(osc);
             this.gainNodes.push(gain);
             this.lfoOscillators.push(lfo);
             this.lfoGains.push(lfoGain);
+            this.constantSources.push(constantSource);
         }
 
         // Apply attack envelope to master gain (soft fade in)
@@ -128,6 +130,10 @@ class FibonacciChord {
                 lfo.stop();
                 lfo.disconnect();
             });
+            this.constantSources.forEach(cs => {
+                cs.stop();
+                cs.disconnect();
+            });
             this.gainNodes.forEach(gain => gain.disconnect());
             this.lfoGains.forEach(gain => gain.disconnect());
 
@@ -136,6 +142,7 @@ class FibonacciChord {
             this.gainNodes = [];
             this.lfoOscillators = [];
             this.lfoGains = [];
+            this.constantSources = [];
 
             this.isPlaying = false;
             console.log('Fibonacci chord stopped');
