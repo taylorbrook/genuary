@@ -108,6 +108,72 @@ const { chromium } = require('playwright');
         console.log('\n=== All Console Messages ===');
         console.log(`Total messages: ${consoleMessages.length}`);
 
+        // Test Day 3 sliders
+        console.log('\n=== Day 3 Slider Test ===');
+        const sliderTest = await page.evaluate(() => {
+            const testSliders = ['rotation', 'sketchiness', 'lineWeight', 'glowIntensity'];
+            const results = {};
+
+            testSliders.forEach(id => {
+                const slider = document.getElementById(id);
+                const display = document.getElementById(`${id}-value`);
+                results[id] = {
+                    sliderExists: !!slider,
+                    sliderVisible: slider ? slider.offsetParent !== null : false,
+                    sliderValue: slider ? slider.value : null,
+                    displayExists: !!display,
+                    displayVisible: display ? display.offsetParent !== null : false,
+                    displayText: display ? display.textContent : null
+                };
+            });
+
+            return results;
+        });
+        console.log('Slider test results:', JSON.stringify(sliderTest, null, 2));
+
+        // Check what's actually being rendered
+        console.log('\n=== Canvas Pixel Test ===');
+        const pixelData = await page.evaluate(() => {
+            const canvas = document.getElementById('glCanvas');
+            if (!canvas) return { error: 'Canvas not found' };
+
+            const gl = canvas.getContext('webgl');
+            if (!gl) return { error: 'No WebGL context' };
+
+            // Read a few pixels from different areas
+            const pixels = new Uint8Array(4);
+            const samples = [];
+
+            // Center
+            gl.readPixels(canvas.width / 2, canvas.height / 2, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            samples.push({ location: 'center', rgba: Array.from(pixels) });
+
+            // Top-left
+            gl.readPixels(10, 10, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            samples.push({ location: 'top-left', rgba: Array.from(pixels) });
+
+            // Bottom-right
+            gl.readPixels(canvas.width - 10, canvas.height - 10, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+            samples.push({ location: 'bottom-right', rgba: Array.from(pixels) });
+
+            return {
+                canvasSize: { width: canvas.width, height: canvas.height },
+                samples: samples
+            };
+        });
+        console.log('Pixel data:', JSON.stringify(pixelData, null, 2));
+
+        // Check what params are being sent to shader
+        console.log('\n=== Shader Params Test ===');
+        const shaderParams = await page.evaluate(() => {
+            if (!window.params) return { error: 'No params found' };
+            return {
+                ...window.params,
+                currentDay: window.currentDay
+            };
+        });
+        console.log('Shader params:', JSON.stringify(shaderParams, null, 2));
+
         // Keep browser open for a bit to observe
         console.log('\nKeeping browser open for 5 seconds to observe...');
         await page.waitForTimeout(5000);

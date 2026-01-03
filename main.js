@@ -267,6 +267,7 @@ async function init() {
 
         // Update params for current day
         Object.assign(params, initialShader.params);
+        window.params = params; // Expose for testing
 
         // Initialize audio system for Day 3 if needed
         if (currentDay === 3 && typeof FibonacciChord !== 'undefined') {
@@ -330,7 +331,15 @@ function setupControls() {
             slider.addEventListener('input', (e) => {
                 const value = isInt ? parseInt(e.target.value) : parseFloat(e.target.value);
                 params[id] = value;
-                valueDisplay.textContent = isInt ? value : value.toFixed(2);
+
+                // Special formatting for harmonic count on Day 3
+                if (currentDay === 3 && id === 'harmonicCount') {
+                    const fibonacci = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+                    const ratios = fibonacci.slice(0, value).map(n => `${n}:1`).join(', ');
+                    valueDisplay.textContent = ratios;
+                } else {
+                    valueDisplay.textContent = isInt ? value : value.toFixed(2);
+                }
 
                 // Day 3 specific: Update audio parameters in real-time
                 if (currentDay === 3 && window.fibonacciChord) {
