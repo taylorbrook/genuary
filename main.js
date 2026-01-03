@@ -146,6 +146,11 @@ async function switchToDay(day) {
 
     currentDay = day;
 
+    // Update URL to reflect current day (allows direct linking)
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.set('day', day);
+    window.history.pushState({}, '', newUrl);
+
     // Update calendar active state
     document.querySelectorAll('.calendar-day').forEach(el => {
         el.classList.remove('active');
@@ -197,14 +202,42 @@ async function init() {
     shaderProgram = new ShaderProgram(canvas);
 
     try {
-        await shaderProgram.init('shaders/vertex.glsl', 'shaders/fragment.glsl');
+        // Check URL for day parameter (e.g., ?day=2 or #day2)
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashMatch = window.location.hash.match(/^#day(\d+)$/);
+        const dayFromUrl = urlParams.get('day') || (hashMatch ? hashMatch[1] : null);
+
+        if (dayFromUrl && shaders[dayFromUrl]) {
+            currentDay = parseInt(dayFromUrl);
+        }
+
+        // Load initial shader
+        const initialShader = shaders[currentDay];
+        await shaderProgram.init(initialShader.vertexPath, initialShader.fragmentPath);
         console.log('Shaders loaded successfully');
+
+        // Update params for current day
+        Object.assign(params, initialShader.params);
 
         // Generate calendar
         generateCalendar();
 
         // Setup UI controls
         setupControls();
+
+        // Update UI to match current day
+        updateControlValues();
+        document.querySelector('header h1').textContent = initialShader.name;
+        document.querySelector('header p').textContent = initialShader.subtitle;
+
+        // Show correct control panel
+        document.querySelectorAll('[class^="day-"]').forEach(el => {
+            el.style.display = 'none';
+        });
+        const dayControls = document.querySelector(`.day-${currentDay}-controls`);
+        if (dayControls) {
+            dayControls.style.display = 'block';
+        }
 
         // Start animation loop
         startTime = performance.now();
