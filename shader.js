@@ -34,13 +34,17 @@ class ShaderProgram {
     }
 
     async init(vertexShaderUrl, fragmentShaderUrl) {
+        console.log('[VISUAL TEST] Loading shaders:', vertexShaderUrl, fragmentShaderUrl);
+
         // Load shader sources
         const vertexSource = await this.loadShader(vertexShaderUrl);
         const fragmentSource = await this.loadShader(fragmentShaderUrl);
+        console.log('[VISUAL TEST] Shaders loaded, compiling...');
 
         // Compile shaders
         const vertexShader = this.compileShader(vertexSource, this.gl.VERTEX_SHADER);
         const fragmentShader = this.compileShader(fragmentSource, this.gl.FRAGMENT_SHADER);
+        console.log('[VISUAL TEST] Shaders compiled successfully');
 
         // Create and link program
         this.program = this.gl.createProgram();
@@ -50,9 +54,11 @@ class ShaderProgram {
 
         if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
             const info = this.gl.getProgramInfoLog(this.program);
+            console.error('[VISUAL TEST] Program linking failed:', info);
             throw new Error('Program linking error: ' + info);
         }
 
+        console.log('[VISUAL TEST] Program linked successfully');
         this.gl.useProgram(this.program);
 
         // Setup geometry (full-screen quad)
@@ -60,6 +66,7 @@ class ShaderProgram {
 
         // Get uniform and attribute locations
         this.setupLocations();
+        console.log('[VISUAL TEST] Uniforms found:', Object.keys(this.uniforms));
 
         // Cleanup shaders (no longer needed after linking)
         this.gl.deleteShader(vertexShader);

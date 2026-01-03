@@ -189,20 +189,29 @@ async function switchToDay(day) {
     }
 
     // Initialize audio system for Day 3
+    console.log('[AUDIO TEST] Switching to day:', day);
+    console.log('[AUDIO TEST] FibonacciChord class exists:', typeof FibonacciChord !== 'undefined');
+
     if (day === 3 && typeof FibonacciChord !== 'undefined') {
+        console.log('[AUDIO TEST] Day 3 initialization starting...');
         if (!window.fibonacciChord) {
+            console.log('[AUDIO TEST] Creating new FibonacciChord instance');
             window.fibonacciChord = new FibonacciChord();
             await window.fibonacciChord.init();
+            console.log('[AUDIO TEST] FibonacciChord initialized');
         }
         // Update audio parameters
         window.fibonacciChord.fundamental = params.fundamental || 40;
         window.fibonacciChord.harmonicCount = params.harmonicCount || 5;
         window.fibonacciChord.globalVolume = params.globalVolume || 0.3;
-
-        // Update interval ratios display
-        updateIntervalRatios(params.harmonicCount || 5);
+        console.log('[AUDIO TEST] Audio parameters set:', {
+            fundamental: window.fibonacciChord.fundamental,
+            harmonicCount: window.fibonacciChord.harmonicCount,
+            globalVolume: window.fibonacciChord.globalVolume
+        });
     } else if (day !== 3 && window.fibonacciChord && window.fibonacciChord.isPlaying) {
         // Stop audio when leaving Day 3
+        console.log('[AUDIO TEST] Leaving Day 3, stopping audio');
         window.fibonacciChord.stop();
     }
 
@@ -288,16 +297,6 @@ async function init() {
     }
 }
 
-// Update interval ratios display for Day 3
-function updateIntervalRatios(count) {
-    const fibonacci = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
-    const ratios = fibonacci.slice(0, count).map(n => `${n}:1`).join(', ');
-    const display = document.getElementById('intervalRatios');
-    if (display) {
-        display.textContent = ratios;
-    }
-}
-
 // Setup UI control event listeners - works dynamically for all controls
 function setupControls() {
     // Find all input sliders in the controls panel
@@ -322,7 +321,6 @@ function setupControls() {
                         window.fibonacciChord.setFundamental(value);
                     } else if (id === 'harmonicCount') {
                         window.fibonacciChord.setHarmonicCount(value);
-                        updateIntervalRatios(value);
                     } else if (id === 'globalVolume') {
                         window.fibonacciChord.setGlobalVolume(value);
                     }
@@ -333,14 +331,25 @@ function setupControls() {
 
     // Day 3 specific: Audio toggle button
     const audioToggle = document.getElementById('audioToggle');
+    console.log('[AUDIO TEST] Audio toggle button:', audioToggle);
     if (audioToggle) {
         audioToggle.addEventListener('click', () => {
-            if (!window.fibonacciChord) return;
+            console.log('[AUDIO TEST] Audio toggle clicked');
+            console.log('[AUDIO TEST] window.fibonacciChord exists:', !!window.fibonacciChord);
+
+            if (!window.fibonacciChord) {
+                console.error('[AUDIO TEST] window.fibonacciChord not initialized!');
+                return;
+            }
+
+            console.log('[AUDIO TEST] fibonacciChord.isPlaying:', window.fibonacciChord.isPlaying);
 
             if (window.fibonacciChord.isPlaying) {
+                console.log('[AUDIO TEST] Stopping audio...');
                 window.fibonacciChord.stop();
                 audioToggle.textContent = '▶ Play Sound';
             } else {
+                console.log('[AUDIO TEST] Starting audio...');
                 window.fibonacciChord.start();
                 audioToggle.textContent = '⏸ Pause Sound';
             }
@@ -367,6 +376,12 @@ function animate(currentTime) {
         const paddedAmplitudes = new Array(21).fill(0);
         for (let i = 0; i < amplitudes.length && i < 21; i++) {
             paddedAmplitudes[i] = amplitudes[i];
+        }
+
+        // Log once per second for visual debugging
+        if (Math.floor(time) !== Math.floor(time - 0.016)) {
+            console.log('[VISUAL TEST] Amplitudes:', paddedAmplitudes.slice(0, params.harmonicCount));
+            console.log('[VISUAL TEST] Harmonic count:', params.harmonicCount);
         }
 
         shaderProgram.setUniform('amplitudes', paddedAmplitudes);

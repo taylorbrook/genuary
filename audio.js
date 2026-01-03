@@ -22,6 +22,7 @@ class FibonacciChord {
     async init() {
         // Create AudioContext (requires user gesture on first interaction)
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('[AUDIO TEST] AudioContext created, state:', this.audioContext.state);
 
         // Create reverb (simple gain for now, can add convolver later)
         await this.createReverb();
@@ -34,7 +35,9 @@ class FibonacciChord {
         this.masterGain.connect(this.reverb);
         this.reverb.connect(this.audioContext.destination);
 
-        console.log('FibonacciChord audio system initialized');
+        console.log('[AUDIO TEST] FibonacciChord audio system initialized');
+        console.log('[AUDIO TEST] Master gain:', this.masterGain);
+        console.log('[AUDIO TEST] Reverb:', this.reverb);
     }
 
     async createReverb() {
@@ -45,17 +48,21 @@ class FibonacciChord {
     }
 
     start() {
+        console.log('[AUDIO TEST] start() called, isPlaying:', this.isPlaying);
         if (this.isPlaying) return;
 
         // Resume audio context if suspended (browser autoplay policy)
         if (this.audioContext.state === 'suspended') {
+            console.log('[AUDIO TEST] Resuming suspended AudioContext');
             this.audioContext.resume();
         }
 
         const now = this.audioContext.currentTime;
         const fibonacci = this.generateFibonacci(this.harmonicCount);
 
-        console.log('Starting Fibonacci chord with harmonics:', fibonacci);
+        console.log('[AUDIO TEST] Starting Fibonacci chord with harmonics:', fibonacci);
+        console.log('[AUDIO TEST] Fundamental:', this.fundamental, 'Hz');
+        console.log('[AUDIO TEST] Global volume:', this.globalVolume);
 
         // Create oscillators for each Fibonacci harmonic
         for (let i = 0; i < fibonacci.length; i++) {
