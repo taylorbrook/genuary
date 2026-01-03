@@ -26,10 +26,21 @@ class ShaderProgram {
 
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
             const info = this.gl.getShaderInfoLog(shader);
+            const typeName = type === this.gl.VERTEX_SHADER ? 'VERTEX' : 'FRAGMENT';
+            console.error(`[SHADER ERROR] ${typeName} shader compilation failed:`);
+            console.error(info);
+
+            // Show line numbers for debugging
+            const lines = source.split('\n');
+            lines.forEach((line, i) => {
+                console.log(`${i + 1}: ${line}`);
+            });
+
             this.gl.deleteShader(shader);
-            throw new Error('Shader compilation error: ' + info);
+            throw new Error(`${typeName} shader compilation error: ` + info);
         }
 
+        console.log('[SHADER SUCCESS] Shader compiled successfully');
         return shader;
     }
 
@@ -122,6 +133,29 @@ class ShaderProgram {
         const location = this.uniforms[name];
         if (!location) return;
 
+        // Get uniform info to check type
+        const numUniforms = this.gl.getProgramParameter(this.program, this.gl.ACTIVE_UNIFORMS);
+        let uniformType = this.gl.FLOAT;
+
+        // Find the uniform type
+        for (let i = 0; i < numUniforms; i++) {
+            const info = this.gl.getActiveUniform(this.program, i);
+            let uniformName = info.name;
+
+            // Strip [0] from array names
+            const arrayMatch = uniformName.match(/^(.+)\[0\]$/);
+            if (arrayMatch) {
+                uniformName = arrayMatch[1];
+            }
+
+            const jsName = uniformName.startsWith('u_') ? uniformName.substring(2) : uniformName;
+
+            if (jsName === name) {
+                uniformType = info.type;
+                break;
+            }
+        }
+
         if (Array.isArray(value)) {
             if (value.length === 2) {
                 this.gl.uniform2fv(location, value);
@@ -134,7 +168,12 @@ class ShaderProgram {
                 this.gl.uniform1fv(location, value);
             }
         } else if (typeof value === 'number') {
-            this.gl.uniform1f(location, value);
+            // Use appropriate method based on uniform type
+            if (uniformType === this.gl.INT || uniformType === this.gl.BOOL) {
+                this.gl.uniform1i(location, Math.floor(value));
+            } else {
+                this.gl.uniform1f(location, value);
+            }
         } else if (typeof value === 'boolean') {
             this.gl.uniform1i(location, value ? 1 : 0);
         }

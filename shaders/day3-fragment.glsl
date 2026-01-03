@@ -147,8 +147,8 @@ void main() {
     // Apply rotation
     uv = rotate2D(u_rotation * u_time * 0.1) * uv;
 
-    // Scale to fit spiral (zoom in for visibility)
-    uv *= 0.3; // Smaller multiplier = zoom in
+    // Scale to fit spiral (zoom out to see all circles)
+    uv *= 2.5; // Larger multiplier = zoom out
 
     // Background: warm paper color
     vec3 bgColor = vec3(0.95, 0.93, 0.88);

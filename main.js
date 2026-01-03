@@ -228,6 +228,9 @@ async function switchToDay(day) {
 
     // Update UI controls
     updateControlValues();
+
+    // Re-setup control listeners for the new day
+    setupControls();
 }
 
 // Update UI control values to match params
@@ -317,12 +320,18 @@ async function init() {
 
 // Setup UI control event listeners - works dynamically for all controls
 function setupControls() {
-    // Find all input sliders in the controls panel
-    const allSliders = document.querySelectorAll('.controls input[type="range"]');
+    // Find all input sliders in the VISIBLE controls panel for current day
+    const currentDayPanel = document.querySelector(`.day-${currentDay}-controls`);
+    if (!currentDayPanel) {
+        console.warn(`No control panel found for day ${currentDay}`);
+        return;
+    }
+
+    const allSliders = currentDayPanel.querySelectorAll('input[type="range"]');
 
     allSliders.forEach(slider => {
         const id = slider.id;
-        const valueDisplay = document.getElementById(`${id}-value`);
+        const valueDisplay = currentDayPanel.querySelector(`#${id}-value`);
 
         if (valueDisplay) {
             // Determine if this is an integer control based on step
