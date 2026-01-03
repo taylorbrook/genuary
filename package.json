@@ -1,0 +1,11 @@
+{
+  "name": "genuary-2026",
+  "version": "1.0.0",
+  "description": "Genuary 2026 creative coding challenge",
+  "scripts": {
+    "test": "node test-browser.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
+  }
+}

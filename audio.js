@@ -200,7 +200,7 @@ class FibonacciChord {
         // Return current amplitude of each harmonic for visual feedback
         const amplitudes = [];
 
-        if (!this.isPlaying || this.gainNodes.length === 0) {
+        if (!this.isPlaying || this.constantSources.length === 0) {
             // Return zeros if not playing
             for (let i = 0; i < this.harmonicCount; i++) {
                 amplitudes.push(0);
@@ -208,9 +208,16 @@ class FibonacciChord {
             return amplitudes;
         }
 
-        // Get current gain value for each oscillator (includes LFO modulation)
-        for (let i = 0; i < this.gainNodes.length; i++) {
-            amplitudes.push(this.gainNodes[i].gain.value);
+        // Get base amplitude from constant sources (LFO will modulate around this value in audio)
+        // For visuals, we use the base value
+        for (let i = 0; i < this.constantSources.length; i++) {
+            const baseGain = this.constantSources[i].offset.value;
+            // Add some animation based on time to show it's alive
+            const now = this.audioContext.currentTime;
+            const fibonacci = this.generateFibonacci(this.harmonicCount);
+            const lfoFreq = fibonacci[i] * 0.1;
+            const modulation = Math.sin(now * lfoFreq * Math.PI * 2) * 0.3 + 1.0;
+            amplitudes.push(baseGain * modulation);
         }
 
         return amplitudes;

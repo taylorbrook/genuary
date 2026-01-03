@@ -99,14 +99,22 @@ class ShaderProgram {
 
         for (let i = 0; i < numUniforms; i++) {
             const info = this.gl.getActiveUniform(this.program, i);
-            const name = info.name;
+            const originalName = info.name; // e.g., "u_amplitudes[0]" or "u_time"
+            let glslName = originalName; // Name to use for getUniformLocation
+
+            // Handle array uniforms - WebGL reports them as "name[0]"
+            // Strip the [0] to get the base name
+            const arrayMatch = originalName.match(/^(.+)\[0\]$/);
+            if (arrayMatch) {
+                glslName = arrayMatch[1]; // e.g., "u_amplitudes[0]" -> "u_amplitudes"
+            }
 
             // Convert uniform name to JavaScript-friendly name
-            // e.g., "u_ballSize" -> "ballSize"
-            const jsName = name.startsWith('u_') ? name.substring(2) : name;
+            // e.g., "u_ballSize" -> "ballSize", "u_amplitudes" -> "amplitudes"
+            const jsName = glslName.startsWith('u_') ? glslName.substring(2) : glslName;
 
             // Store location
-            this.uniforms[jsName] = this.gl.getUniformLocation(this.program, name);
+            this.uniforms[jsName] = this.gl.getUniformLocation(this.program, glslName);
         }
     }
 

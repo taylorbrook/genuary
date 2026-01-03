@@ -4,6 +4,9 @@ let shaderProgram;
 let startTime;
 let currentDay = 1;
 
+// Expose to window for testing and debugging
+window.currentDay = currentDay;
+
 // Shader configurations for each day
 const shaders = {
     1: {
@@ -161,6 +164,7 @@ async function switchToDay(day) {
     if (!shaders[day]) return;
 
     currentDay = day;
+    window.currentDay = day; // Expose to window
 
     // Update URL to reflect current day (allows direct linking)
     const newUrl = new URL(window.location);
@@ -243,6 +247,7 @@ function updateControlValues() {
 async function init() {
     const canvas = document.getElementById('glCanvas');
     shaderProgram = new ShaderProgram(canvas);
+    window.shaderProgram = shaderProgram; // Expose to window for testing
 
     try {
         // Check URL for day parameter (e.g., ?day=2 or #day2)
@@ -252,6 +257,7 @@ async function init() {
 
         if (dayFromUrl && shaders[dayFromUrl]) {
             currentDay = parseInt(dayFromUrl);
+            window.currentDay = currentDay; // Expose to window
         }
 
         // Load initial shader
@@ -261,6 +267,17 @@ async function init() {
 
         // Update params for current day
         Object.assign(params, initialShader.params);
+
+        // Initialize audio system for Day 3 if needed
+        if (currentDay === 3 && typeof FibonacciChord !== 'undefined') {
+            console.log('[AUDIO TEST] Initializing Day 3 audio on page load...');
+            window.fibonacciChord = new FibonacciChord();
+            await window.fibonacciChord.init();
+            window.fibonacciChord.fundamental = params.fundamental || 40;
+            window.fibonacciChord.harmonicCount = params.harmonicCount || 5;
+            window.fibonacciChord.globalVolume = params.globalVolume || 0.3;
+            console.log('[AUDIO TEST] Day 3 audio initialized');
+        }
 
         // Generate calendar
         generateCalendar();
