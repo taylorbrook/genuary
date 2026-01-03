@@ -114,9 +114,14 @@ class ShaderProgram {
                 this.gl.uniform3fv(location, value);
             } else if (value.length === 4) {
                 this.gl.uniform4fv(location, value);
+            } else {
+                // For larger arrays (like audio amplitudes)
+                this.gl.uniform1fv(location, value);
             }
-        } else {
+        } else if (typeof value === 'number') {
             this.gl.uniform1f(location, value);
+        } else if (typeof value === 'boolean') {
+            this.gl.uniform1i(location, value ? 1 : 0);
         }
     }
 

@@ -60,6 +60,21 @@ const shaders = {
             lineWeight: 0.7,
             contrast: 1.8
         }
+    },
+    3: {
+        name: "Fibonacci Forever",
+        subtitle: "Fibonacci sequence",
+        vertexPath: "shaders/vertex.glsl",
+        fragmentPath: "shaders/day3-fragment.glsl",
+        params: {
+            fundamental: 40,
+            harmonicCount: 5,
+            rotation: 0.0,
+            sketchiness: 0.15,
+            lineWeight: 0.8,
+            glowIntensity: 1.0,
+            spiralWeight: 1.5
+        }
     }
 };
 
@@ -172,6 +187,20 @@ async function switchToDay(day) {
         dayControls.style.display = 'block';
     }
 
+    // Initialize audio system for Day 3
+    if (day === 3 && typeof FibonacciChord !== 'undefined') {
+        if (!window.fibonacciChord) {
+            window.fibonacciChord = new FibonacciChord();
+            await window.fibonacciChord.init();
+        }
+        // Update audio parameters
+        window.fibonacciChord.fundamental = params.fundamental || 40;
+        window.fibonacciChord.harmonicCount = params.harmonicCount || 5;
+    } else if (day !== 3 && window.fibonacciChord && window.fibonacciChord.isPlaying) {
+        // Stop audio when leaving Day 3
+        window.fibonacciChord.stop();
+    }
+
     // Reload shader
     const config = shaders[day];
     await shaderProgram.init(config.vertexPath, config.fragmentPath);
@@ -271,9 +300,34 @@ function setupControls() {
                 const value = isInt ? parseInt(e.target.value) : parseFloat(e.target.value);
                 params[id] = value;
                 valueDisplay.textContent = isInt ? value : value.toFixed(2);
+
+                // Day 3 specific: Update audio parameters in real-time
+                if (currentDay === 3 && window.fibonacciChord) {
+                    if (id === 'fundamental') {
+                        window.fibonacciChord.setFundamental(value);
+                    } else if (id === 'harmonicCount') {
+                        window.fibonacciChord.setHarmonicCount(value);
+                    }
+                }
             });
         }
     });
+
+    // Day 3 specific: Audio toggle button
+    const audioToggle = document.getElementById('audioToggle');
+    if (audioToggle) {
+        audioToggle.addEventListener('click', () => {
+            if (!window.fibonacciChord) return;
+
+            if (window.fibonacciChord.isPlaying) {
+                window.fibonacciChord.stop();
+                audioToggle.textContent = '▶ Play Sound';
+            } else {
+                window.fibonacciChord.start();
+                audioToggle.textContent = '⏸ Pause Sound';
+            }
+        });
+    }
 }
 
 // Animation loop
@@ -286,6 +340,20 @@ function animate(currentTime) {
         shaderProgram.canvas.width,
         shaderProgram.canvas.height
     ]);
+
+    // Day 3 specific: Pass audio amplitude data to shader
+    if (currentDay === 3 && window.fibonacciChord) {
+        const amplitudes = window.fibonacciChord.getAmplitudes();
+
+        // Pad array to fixed size (21 elements) for shader uniform
+        const paddedAmplitudes = new Array(21).fill(0);
+        for (let i = 0; i < amplitudes.length && i < 21; i++) {
+            paddedAmplitudes[i] = amplitudes[i];
+        }
+
+        shaderProgram.setUniform('amplitudes', paddedAmplitudes);
+        shaderProgram.setUniform('harmonicCount', params.harmonicCount);
+    }
 
     // Dynamically update all params as uniforms
     Object.keys(params).forEach(key => {

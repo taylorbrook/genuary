@@ -266,10 +266,65 @@
             </div>
             </div>
             <!-- End Day 2 Controls -->
+
+            <!-- Day 3 Controls -->
+            <div class="day-3-controls" style="display: none;">
+            <h3>Audio</h3>
+
+            <div class="control-group">
+                <button id="audioToggle" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">▶ Play Sound</button>
+            </div>
+
+            <div class="control-group">
+                <label for="fundamental">Fundamental Frequency (Hz)</label>
+                <input type="range" id="fundamental" min="20" max="200" value="40" step="1">
+                <span id="fundamental-value">40</span>
+            </div>
+
+            <div class="control-group">
+                <label for="harmonicCount">Number of Harmonics</label>
+                <input type="range" id="harmonicCount" min="2" max="12" value="5" step="1">
+                <span id="harmonicCount-value">5</span>
+            </div>
+
+            <h3>Visual Style</h3>
+
+            <div class="control-group">
+                <label for="rotation">Rotation</label>
+                <input type="range" id="rotation" min="-1" max="1" value="0" step="0.1">
+                <span id="rotation-value">0.00</span>
+            </div>
+
+            <div class="control-group">
+                <label for="sketchiness">Sketch Wobble</label>
+                <input type="range" id="sketchiness" min="0" max="0.5" value="0.15" step="0.01">
+                <span id="sketchiness-value">0.15</span>
+            </div>
+
+            <div class="control-group">
+                <label for="lineWeight">Line Weight</label>
+                <input type="range" id="lineWeight" min="0.3" max="3" value="0.8" step="0.1">
+                <span id="lineWeight-value">0.80</span>
+            </div>
+
+            <div class="control-group">
+                <label for="glowIntensity">Glow Intensity</label>
+                <input type="range" id="glowIntensity" min="0" max="3" value="1.0" step="0.1">
+                <span id="glowIntensity-value">1.00</span>
+            </div>
+
+            <div class="control-group">
+                <label for="spiralWeight">Spiral Line Weight</label>
+                <input type="range" id="spiralWeight" min="0.5" max="3" value="1.5" step="0.1">
+                <span id="spiralWeight-value">1.50</span>
+            </div>
+            </div>
+            <!-- End Day 3 Controls -->
             </div>
         </div>
     </div>
 
+    <script src="audio.js"></script>
     <script src="shader.js"></script>
     <script src="main.js"></script>
 </body>
