@@ -79,6 +79,12 @@ const shaders = {
             glowIntensity: 1.0,
             spiralWeight: 1.5
         }
+    },
+        4: {
+        name: "Pixel Flow",
+        subtitle: "Lowres",
+        vertexPath: "shaders/vertex.glsl",
+        fragmentPath: "shaders/day4-pixels.glsl"
     }
 };
 
