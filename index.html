@@ -330,11 +330,31 @@
             <div class="day-4-controls" style="display: none;">
             </div>
             <!-- End Day 4 Controls -->
+            <!-- Day 5 Controls -->
+            <div class="day-5-controls" style="display: none;">
+            </div>
+            <!-- End Day 5 Controls -->
+            <!-- Day 6 Controls -->
+            <div class="day-6-controls" style="display: none;">
+            <div class="control-group">
+                <label for="lightIntensity">Light Intensity</label>
+                <input type="range" id="lightIntensity" min="0" max="1" value="0.5" step="0.01">
+                <span id="lightIntensity-value">0.50</span>
+            </div>
+
+            <div class="control-group">
+                <label for="zoom">Zoom</label>
+                <input type="range" id="zoom" min="50" max="300" value="150" step="5">
+                <span id="zoom-value">150</span>
+            </div>
+            </div>
+            <!-- End Day 6 Controls -->
             </div>
         </div>
     </div>
 
     <script src="audio.js"></script>
+    <script src="lorenz.js"></script>
     <script src="shader.js"></script>
     <script src="main.js"></script>
     <script src="test-day3.js"></script>

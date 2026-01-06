@@ -85,6 +85,22 @@ const shaders = {
         subtitle: "Lowres",
         vertexPath: "shaders/vertex.glsl",
         fragmentPath: "shaders/day4-pixels.glsl"
+    },
+    5: {
+        name: "Spell Genuary",
+        subtitle: "I skipped this one",
+        // No shader for this day
+    },
+    6: {
+        name: "Lights on/off",
+        subtitle: "Lorenz particles with 3d lighting",
+        vertexPath: "shaders/day6-vertex.glsl",
+        fragmentPath: "shaders/day6-fragment.glsl",
+        isLorenz: true, // Special flag for Lorenz rendering
+        params: {
+            lightIntensity: 0.5,
+            zoom: 150
+        }
     }
 };
 
@@ -165,9 +181,25 @@ function generateCalendar() {
     }
 }
 
+// Helper function to recreate canvas (needed when switching between WebGL 1 and WebGL 2)
+function recreateCanvas() {
+    const oldCanvas = document.getElementById('glCanvas');
+    const parent = oldCanvas.parentNode;
+    const newCanvas = document.createElement('canvas');
+    newCanvas.id = 'glCanvas';
+    newCanvas.width = oldCanvas.width;
+    newCanvas.height = oldCanvas.height;
+    parent.replaceChild(newCanvas, oldCanvas);
+    return newCanvas;
+}
+
 // Switch to a different day's shader
 async function switchToDay(day) {
     if (!shaders[day]) return;
+
+    const config = shaders[day];
+    const wasLorenzDay = currentDay === 6;
+    const isLorenzDay = config.isLorenz;
 
     currentDay = day;
     window.currentDay = day; // Expose to window
@@ -225,12 +257,56 @@ async function switchToDay(day) {
         window.fibonacciChord.stop();
     }
 
-    // Reload shader
-    const config = shaders[day];
-    await shaderProgram.init(config.vertexPath, config.fragmentPath);
+    // Stop Lorenz Attractor if leaving Day 6
+    if (wasLorenzDay && window.lorenzAttractor) {
+        console.log('[LORENZ] Leaving Day 6, stopping Lorenz Attractor');
+        window.lorenzAttractor.stop();
+    }
+
+    // Recreate canvas if switching between WebGL 1 and WebGL 2
+    let canvas;
+    if (wasLorenzDay !== isLorenzDay) {
+        console.log('[CANVAS] Recreating canvas to switch WebGL versions');
+        canvas = recreateCanvas();
+    } else {
+        canvas = document.getElementById('glCanvas');
+    }
+
+    // Handle switching between Lorenz (Day 6) and other days
+    if (config.isLorenz && typeof LorenzAttractor !== 'undefined') {
+        // Switching TO Day 6: Lorenz Attractor
+        canvas.style.display = 'block';
+
+        // Need to recreate the canvas context since we can't have both WebGL 1 and WebGL 2
+        // The easiest way is to just create a new LorenzAttractor instance
+        console.log('[LORENZ] Creating new Lorenz Attractor instance');
+        window.lorenzAttractor = new LorenzAttractor(canvas);
+        await window.lorenzAttractor.init();
+        window.lorenzAttractor.lightIntensity = params.lightIntensity || 0.5;
+        window.lorenzAttractor.zoom = params.zoom || 150;
+        window.lorenzAttractor.start();
+        console.log('[LORENZ] Lorenz Attractor started for Day 6');
+    } else if (config.vertexPath && config.fragmentPath) {
+        // Switching TO a shader day (not Lorenz)
+        canvas.style.display = 'block';
+
+        // Recreate ShaderProgram if coming from Day 6 or if canvas was recreated
+        if (wasLorenzDay || !shaderProgram || wasLorenzDay !== isLorenzDay) {
+            console.log('[SHADER] Creating new ShaderProgram instance');
+            shaderProgram = new ShaderProgram(canvas);
+            window.shaderProgram = shaderProgram;
+        }
+
+        await shaderProgram.init(config.vertexPath, config.fragmentPath);
+    } else {
+        // Day has no shader (Day 5) - hide canvas
+        canvas.style.display = 'none';
+    }
 
     // Update params
-    Object.assign(params, config.params);
+    if (config.params) {
+        Object.assign(params, config.params);
+    }
 
     // Update UI controls
     updateControlValues();
@@ -255,8 +331,6 @@ function updateControlValues() {
 // Initialize the application
 async function init() {
     const canvas = document.getElementById('glCanvas');
-    shaderProgram = new ShaderProgram(canvas);
-    window.shaderProgram = shaderProgram; // Expose to window for testing
 
     try {
         // Check URL for day parameter (e.g., ?day=2 or #day2)
@@ -271,11 +345,31 @@ async function init() {
 
         // Load initial shader
         const initialShader = shaders[currentDay];
-        await shaderProgram.init(initialShader.vertexPath, initialShader.fragmentPath);
-        console.log('Shaders loaded successfully');
+
+        // Check if this is Day 6 (Lorenz Attractor)
+        if (initialShader.isLorenz && typeof LorenzAttractor !== 'undefined') {
+            console.log('[LORENZ] Initializing Lorenz Attractor for Day 6...');
+            window.lorenzAttractor = new LorenzAttractor(canvas);
+            await window.lorenzAttractor.init();
+            window.lorenzAttractor.lightIntensity = initialShader.params.lightIntensity || 0.5;
+            window.lorenzAttractor.zoom = initialShader.params.zoom || 150;
+            window.lorenzAttractor.start();
+            console.log('[LORENZ] Lorenz Attractor initialized and started');
+        } else {
+            // Only create ShaderProgram for non-Lorenz days
+            shaderProgram = new ShaderProgram(canvas);
+            window.shaderProgram = shaderProgram; // Expose to window for testing
+
+            if (initialShader.vertexPath && initialShader.fragmentPath) {
+                await shaderProgram.init(initialShader.vertexPath, initialShader.fragmentPath);
+                console.log('Shaders loaded successfully');
+            }
+        }
 
         // Update params for current day
-        Object.assign(params, initialShader.params);
+        if (initialShader.params) {
+            Object.assign(params, initialShader.params);
+        }
         window.params = params; // Expose for testing
 
         // Initialize audio system for Day 3 if needed
@@ -366,6 +460,15 @@ function setupControls() {
                         window.fibonacciChord.setGlobalVolume(value);
                     }
                 }
+
+                // Day 6 specific: Update Lorenz Attractor parameters in real-time
+                if (currentDay === 6 && window.lorenzAttractor) {
+                    if (id === 'lightIntensity') {
+                        window.lorenzAttractor.setLightIntensity(value);
+                    } else if (id === 'zoom') {
+                        window.lorenzAttractor.setZoom(value);
+                    }
+                }
             });
         }
     });
@@ -400,6 +503,24 @@ function setupControls() {
 
 // Animation loop
 function animate(currentTime) {
+    // Day 6 has its own animation loop, skip this one
+    if (currentDay === 6) {
+        requestAnimationFrame(animate);
+        return;
+    }
+
+    // Day 5 has no shader, skip rendering
+    if (currentDay === 5) {
+        requestAnimationFrame(animate);
+        return;
+    }
+
+    // Safety check: ensure shaderProgram exists
+    if (!shaderProgram) {
+        requestAnimationFrame(animate);
+        return;
+    }
+
     const time = (currentTime - startTime) * 0.001; // Convert to seconds
 
     // Update standard uniforms
