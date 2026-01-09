@@ -108,7 +108,7 @@ const shaders = {
         vertexPath: "shaders/vertex.glsl",
         fragmentPath: "shaders/day7-fragment.glsl",
         params: {
-            pixelSize: 4.0,
+            pixelSize: 1.0,
             speed: 1.0,
             patternScale: 1.0
         }
