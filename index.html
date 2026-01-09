@@ -349,10 +349,46 @@
             </div>
             </div>
             <!-- End Day 6 Controls -->
+            <!-- Day 7 Controls (skipped) -->
+            <div class="day-7-controls" style="display: none;">
+            </div>
+            <!-- End Day 7 Controls -->
+            <!-- Day 8 Controls (skipped) -->
+            <div class="day-8-controls" style="display: none;">
+            </div>
+            <!-- End Day 8 Controls -->
+            <!-- Day 9 Controls -->
+            <div class="day-9-controls" style="display: none;">
+            <p style="color: #888; margin-bottom: 15px;">Click canvas to toggle attract/repel mode</p>
+
+            <div class="control-group">
+                <button id="modeToggle" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Mode: Attract</button>
+            </div>
+
+            <div class="control-group">
+                <label for="mouseInfluence">Mouse Influence</label>
+                <input type="range" id="mouseInfluence" min="0" max="1" value="0.5" step="0.01">
+                <span id="mouseInfluence-value">0.50</span>
+            </div>
+
+            <div class="control-group">
+                <label for="contagionRate">Color Contagion Rate</label>
+                <input type="range" id="contagionRate" min="0" max="0.1" value="0.02" step="0.001">
+                <span id="contagionRate-value">0.020</span>
+            </div>
+
+            <div class="control-group">
+                <label for="chaosAmount">Chaos Amount</label>
+                <input type="range" id="chaosAmount" min="0" max="1" value="0.3" step="0.01">
+                <span id="chaosAmount-value">0.30</span>
+            </div>
+            </div>
+            <!-- End Day 9 Controls -->
             </div>
         </div>
     </div>
 
+    <script src="automata.js"></script>
     <script src="audio.js"></script>
     <script src="lorenz.js"></script>
     <script src="shader.js"></script>

@@ -101,6 +101,26 @@ const shaders = {
             lightIntensity: 0.5,
             zoom: 150
         }
+    },
+    7: {
+        name: "Progress Bars",
+        subtitle: "I skipped this one"
+    },
+    8: {
+        name: "Draw 1 million",
+        subtitle: "I skipped this one"
+    },
+    9: {
+        name: "Crazy Automaton",
+        subtitle: "Cellular automata with crazy rules",
+        vertexPath: "shaders/day9-vertex.glsl",
+        fragmentPath: "shaders/day9-fragment.glsl",
+        isAutomata: true, // Special flag for Automata rendering
+        params: {
+            mouseInfluence: 0.5,
+            contagionRate: 0.02,
+            chaosAmount: 0.3
+        }
     }
 };
 
@@ -199,7 +219,9 @@ async function switchToDay(day) {
 
     const config = shaders[day];
     const wasLorenzDay = currentDay === 6;
+    const wasAutomataDay = currentDay === 9;
     const isLorenzDay = config.isLorenz;
+    const isAutomataDay = config.isAutomata;
 
     currentDay = day;
     window.currentDay = day; // Expose to window
@@ -263,9 +285,17 @@ async function switchToDay(day) {
         window.lorenzAttractor.stop();
     }
 
+    // Stop Crazy Automaton if leaving Day 9
+    if (wasAutomataDay && window.crazyAutomaton) {
+        console.log('[AUTOMATA] Leaving Day 9, stopping Crazy Automaton');
+        window.crazyAutomaton.stop();
+    }
+
     // Recreate canvas if switching between WebGL 1 and WebGL 2
     let canvas;
-    if (wasLorenzDay !== isLorenzDay) {
+    const needsWebGL2 = isLorenzDay || isAutomataDay;
+    const wasWebGL2 = wasLorenzDay || wasAutomataDay;
+    if (wasWebGL2 !== needsWebGL2) {
         console.log('[CANVAS] Recreating canvas to switch WebGL versions');
         canvas = recreateCanvas();
     } else {
@@ -286,6 +316,18 @@ async function switchToDay(day) {
         window.lorenzAttractor.zoom = params.zoom || 150;
         window.lorenzAttractor.start();
         console.log('[LORENZ] Lorenz Attractor started for Day 6');
+    } else if (config.isAutomata && typeof CrazyAutomaton !== 'undefined') {
+        // Switching TO Day 9: Crazy Automaton
+        canvas.style.display = 'block';
+
+        console.log('[AUTOMATA] Creating new Crazy Automaton instance');
+        window.crazyAutomaton = new CrazyAutomaton(canvas);
+        await window.crazyAutomaton.init();
+        window.crazyAutomaton.mouseInfluence = params.mouseInfluence || 0.5;
+        window.crazyAutomaton.contagionRate = params.contagionRate || 0.02;
+        window.crazyAutomaton.chaosAmount = params.chaosAmount || 0.3;
+        window.crazyAutomaton.start();
+        console.log('[AUTOMATA] Crazy Automaton started for Day 9');
     } else if (config.vertexPath && config.fragmentPath) {
         // Switching TO a shader day (not Lorenz)
         canvas.style.display = 'block';
@@ -355,8 +397,18 @@ async function init() {
             window.lorenzAttractor.zoom = initialShader.params.zoom || 150;
             window.lorenzAttractor.start();
             console.log('[LORENZ] Lorenz Attractor initialized and started');
+        } else if (initialShader.isAutomata && typeof CrazyAutomaton !== 'undefined') {
+            // Check if this is Day 9 (Crazy Automaton)
+            console.log('[AUTOMATA] Initializing Crazy Automaton for Day 9...');
+            window.crazyAutomaton = new CrazyAutomaton(canvas);
+            await window.crazyAutomaton.init();
+            window.crazyAutomaton.mouseInfluence = initialShader.params.mouseInfluence || 0.5;
+            window.crazyAutomaton.contagionRate = initialShader.params.contagionRate || 0.02;
+            window.crazyAutomaton.chaosAmount = initialShader.params.chaosAmount || 0.3;
+            window.crazyAutomaton.start();
+            console.log('[AUTOMATA] Crazy Automaton initialized and started');
         } else {
-            // Only create ShaderProgram for non-Lorenz days
+            // Only create ShaderProgram for non-special days
             shaderProgram = new ShaderProgram(canvas);
             window.shaderProgram = shaderProgram; // Expose to window for testing
 
@@ -469,9 +521,31 @@ function setupControls() {
                         window.lorenzAttractor.setZoom(value);
                     }
                 }
+
+                // Day 9 specific: Update Crazy Automaton parameters in real-time
+                if (currentDay === 9 && window.crazyAutomaton) {
+                    if (id === 'mouseInfluence') {
+                        window.crazyAutomaton.setMouseInfluence(value);
+                    } else if (id === 'contagionRate') {
+                        window.crazyAutomaton.setContagionRate(value);
+                    } else if (id === 'chaosAmount') {
+                        window.crazyAutomaton.setChaosAmount(value);
+                    }
+                }
             });
         }
     });
+
+    // Day 9 specific: Mode toggle button
+    const modeToggle = document.getElementById('modeToggle');
+    if (modeToggle && currentDay === 9) {
+        modeToggle.onclick = () => {
+            if (window.crazyAutomaton) {
+                window.crazyAutomaton.attractMode = !window.crazyAutomaton.attractMode;
+                modeToggle.textContent = window.crazyAutomaton.attractMode ? 'Mode: Attract' : 'Mode: Repel';
+            }
+        };
+    }
 
     // Day 3 specific: Audio toggle button
     const audioToggle = document.getElementById('audioToggle');
@@ -503,14 +577,14 @@ function setupControls() {
 
 // Animation loop
 function animate(currentTime) {
-    // Day 6 has its own animation loop, skip this one
-    if (currentDay === 6) {
+    // Day 6 and Day 9 have their own animation loops, skip this one
+    if (currentDay === 6 || currentDay === 9) {
         requestAnimationFrame(animate);
         return;
     }
 
-    // Day 5 has no shader, skip rendering
-    if (currentDay === 5) {
+    // Days 5, 7, 8 have no shader, skip rendering
+    if (currentDay === 5 || currentDay === 7 || currentDay === 8) {
         requestAnimationFrame(animate);
         return;
     }
