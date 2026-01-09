@@ -103,12 +103,27 @@ const shaders = {
         }
     },
     7: {
-        name: "Progress Bars",
-        subtitle: "I skipped this one"
+        name: "Bitwise Pixel Art",
+        subtitle: "Boolean algebra",
+        vertexPath: "shaders/vertex.glsl",
+        fragmentPath: "shaders/day7-fragment.glsl",
+        params: {
+            pixelSize: 4.0,
+            speed: 1.0,
+            patternScale: 1.0
+        }
     },
     8: {
-        name: "Draw 1 million",
-        subtitle: "I skipped this one"
+        name: "A City",
+        subtitle: "Create a generative metropolis",
+        vertexPath: "shaders/vertex.glsl",
+        fragmentPath: "shaders/day8-fragment.glsl",
+        params: {
+            buildingDensity: 0.7,
+            windowBrightness: 0.8,
+            detailSpeed: 1.0,
+            cameraHeight: 15.0
+        }
     },
     9: {
         name: "Crazy Automaton",
@@ -583,8 +598,8 @@ function animate(currentTime) {
         return;
     }
 
-    // Days 5, 7, 8 have no shader, skip rendering
-    if (currentDay === 5 || currentDay === 7 || currentDay === 8) {
+    // Day 5 has no shader, skip rendering
+    if (currentDay === 5) {
         requestAnimationFrame(animate);
         return;
     }
